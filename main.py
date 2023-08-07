@@ -1,4 +1,11 @@
+import time
+
+import customtkinter
 import openpyxl
+
+import tkinter as tk
+from tkinter import filedialog
+
 
 
 def combine_same_prefix_column(file_name: str):
@@ -47,6 +54,51 @@ def combine_same_prefix_column(file_name: str):
 
     workbook.save(file_name)
 
+class CustomTKinterApp(customtkinter.CTk):
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Excel 合併子公司 UI")
+
+        self.file_path = tk.StringVar()
+
+        self.create_widgets()
+
+    def create_widgets(self):
+
+        self.frame = customtkinter.CTkFrame(self.root , width= 600 , height= 400)
+        self.frame.pack(padx=10, pady = 10)
+
+        self.sub_frame = customtkinter.CTkFrame(self.frame, width= 575 , height= 150 )
+        self.sub_frame.grid(row= 0,column =0,columnspan= 2)
+        self.sub_frame.pack(padx = 10, pady = 10)
+
+        # Text box to display file path
+        self.file_path_textbox = customtkinter.CTkEntry(self.sub_frame, textvariable=self.file_path, width=500)
+        self.file_path_textbox.grid(row= 0, column = 1,columnspan= 2)
+        self.file_path_textbox.pack(padx=10, pady=10)
+
+        # Browse button
+        self.browse_button = customtkinter.CTkButton(self.sub_frame, text="瀏覽檔案", command=self.browse_file)
+        self.browse_button.pack(padx=10, pady=1,side= tk.RIGHT)
+
+        # Submit button
+        self.submit_button = customtkinter.CTkButton(self.frame, text="開始合併", command=self.submit_file)
+        self.submit_button.pack(padx=20, pady=1,side = tk.RIGHT)
+
+    def browse_file(self):
+        file_path = filedialog.askopenfilename()
+        if file_path:
+            self.file_path.set(file_path)
+
+    def submit_file(self):
+        file_name = self.file_path.get()
+        if file_name:
+            combine_same_prefix_column(file_name=file_name)
+            # You can perform further actions with the file path here
+
+
 
 if __name__ == '__main__':
-    combine_same_prefix_column(file_name='combine_same_prefix_column_test.xlsx')
+    root = tk.Tk()
+    app = CustomTKinterApp(root)
+    root.mainloop()
