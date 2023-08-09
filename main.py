@@ -15,68 +15,66 @@ def combine_same_prefix_column(file_name: str,data_sheet_name:str,company_sheet_
     except:
         exception_error =True
         status_message='無法取得Excel檔'
+        return False,status_message
     try:
         data_sheet = workbook[data_sheet_name]
     except:
-        if exception_error!=True:
-            exception_error =True
-            status_message = '找不到資料列工作表'
-        else:
-            status_message+='& 找不到資料列工作表'
+        exception_error =True
+        status_message = '找不到資料列工作表'
+        return False,status_message
     try:
         head_quarter_sheet = workbook[company_sheet_name]
     except:
-        if exception_error != True:
-            exception_error = True
-            status_message = '找不到總公司工作表'
-        else:
-            status_message += '& 找不到總公司工作表'
+        exception_error = True
+        status_message = '找不到總公司工作表'
+        return False,status_message
     new_sheet_title = [head_quarter_sheet['a1'].value]
-    if not exception_error:
-        # get總公司名稱
-        head_quarter_dict = {}
-        for row in range(1,len(head_quarter_sheet['A'])+1):
-            if row!=1 :
-                head_quarter_dict[head_quarter_sheet[f'a{row}'].value] = {}
-        print(head_quarter_dict.keys())
 
-        # 合併資料
-        length = len(data_sheet['A'])+1
-        for prefix in head_quarter_dict.keys():
-            for row_num in range(1, length):
-                row = data_sheet[f'{row_num}']
-                title = data_sheet[f'{1}']
-                for col_num in range(len(row)):
-                    cell = row[col_num].value
-                    # 標籤欄
-                    if row_num == 1:
-                        if col_num != 0:
-                            head_quarter_dict.get(prefix)[cell] = 0
-                            if cell not in new_sheet_title:
-                                new_sheet_title.append(cell)
-                    # 資料欄
-                    else:
-                        if row[0].value.startswith(prefix) and col_num != 0:
-                            head_quarter_dict.get(prefix)[title[col_num].value] += float(cell)
-        print(head_quarter_dict)
+    # get總公司名稱
+    head_quarter_dict = {}
+    for row in range(1,len(head_quarter_sheet['A'])+1):
+        if row!=1 :
+            head_quarter_dict[head_quarter_sheet[f'a{row}'].value] = {}
+    print(head_quarter_dict.keys())
 
-        # 輸出資料
-        export_sheet = workbook.create_sheet('輸出')
-        export_sheet.append(new_sheet_title)
-        final_data = []
-        for company, subdict in head_quarter_dict.items():
-            final_data.append(company)
-            for key, value in subdict.items():
-                final_data.append(value)
-            export_sheet.append(final_data)
-            final_data.clear()
-        try:
-            workbook.save(file_name)
-            return True
-        except:
-            return False
-    else:
-        return False
+    # 合併資料
+    length = len(data_sheet['A'])+1
+    for prefix in head_quarter_dict.keys():
+        for row_num in range(1, length):
+            row = data_sheet[f'{row_num}']
+            title = data_sheet[f'{1}']
+            for col_num in range(len(row)):
+                cell = row[col_num].value
+                # 標籤欄
+                if row_num == 1:
+                    if col_num != 0:
+                        head_quarter_dict.get(prefix)[cell] = 0
+                        if cell not in new_sheet_title:
+                            new_sheet_title.append(cell)
+                # 資料欄
+                else:
+                    if row[0].value.startswith(prefix) and col_num != 0:
+                        head_quarter_dict.get(prefix)[title[col_num].value] += float(cell)
+    print(head_quarter_dict)
+
+    # 輸出資料
+    export_sheet = workbook.create_sheet('輸出')
+    export_sheet.append(new_sheet_title)
+    final_data = []
+    for company, subdict in head_quarter_dict.items():
+        final_data.append(company)
+        for key, value in subdict.items():
+            final_data.append(value)
+        export_sheet.append(final_data)
+        final_data.clear()
+    try:
+        status_message = '已完成 Excel 資料合併'
+        workbook.save(file_name)
+        return True,status_message
+    except:
+        status_message = '無法儲存Excel檔'
+        return False,status_message
+
 class successDialog(simpledialog.Dialog):
     def __init__(self, parent, title):
         super().__init__(parent, title)
@@ -107,11 +105,13 @@ class CustomTKinterApp(customtkinter.CTk):
     def __init__(self, root):
         self.root = root
         self.root.title("Excel 合併子公司 UI")
-        self.root.iconbitmap('icon.ico')
+        self.root.iconbitmap('icon 2.ico')
 
         self.data_sheet_name =tk.StringVar()
         self.company_reference_sheet_name = tk.StringVar()
         self.file_path = tk.StringVar()
+        self.status_message = tk.StringVar()
+        self.status_color = tk.StringVar()
 
         self.create_widgets()
 
@@ -156,7 +156,19 @@ class CustomTKinterApp(customtkinter.CTk):
         self.submit_button = customtkinter.CTkButton(self.frame, text="開始資料合併", command=self.submit_file, width=100)
         self.submit_button.pack(padx=20, pady=1, side=tk.RIGHT)
 
+        self.message_label = customtkinter.CTkLabel(self.frame,textvariable=self.status_message,text_color=self.check_messagelebel_text_color())
+        self.message_label.place(relx=0, anchor='e')  # move the text to the left side of frame
+        self.message_label.place(x=520, y=185)
 
+
+    def check_messagelebel_text_color(self):
+        if self.status_message.get() == '':
+            self.status_color.set('black')
+        elif self.status_message.get() == '已完成 Excel 資料合併':
+            self.status_color.set('green')
+        else:
+            self.status_color.set('dark red')
+        return self.status_color.get()
 
     def browse_file(self):
         file_path = filedialog.askopenfilename()
@@ -168,13 +180,25 @@ class CustomTKinterApp(customtkinter.CTk):
         data_sheet_name = self.data_sheet_name_textbox.get()
         company_sheet_name = self.company_reference_sheet_name_textbox.get()
         if file_name:
-            function_success = combine_same_prefix_column(file_name=file_name,data_sheet_name=data_sheet_name, company_sheet_name=company_sheet_name)
+            function_success,status_message = combine_same_prefix_column(file_name=file_name,data_sheet_name=data_sheet_name, company_sheet_name=company_sheet_name)
             # button = customtkinter.CTkButton(self.root, text='Ok',width=50)
 
             if function_success:
                 successDialog(self.root,title='Success')
+                self.status_message.set(status_message)
+                self.message_label.destroy()
+                self.message_label = customtkinter.CTkLabel(self.frame, textvariable=self.status_message,
+                                                            text_color=self.check_messagelebel_text_color())
+                self.message_label.place(relx=0, anchor='e')  # move the text to the left side of frame
+                self.message_label.place(x=520, y=185)
             else:
                 errorDialog(self.root, title='Failed')
+                self.status_message.set(status_message)
+                self.message_label.destroy()
+                self.message_label = customtkinter.CTkLabel(self.frame, textvariable=self.status_message,
+                                                            text_color=self.check_messagelebel_text_color())
+                self.message_label.place(relx=0, anchor='e')  # move the text to the left side of frame
+                self.message_label.place(x=520, y=185)
             # You can perform further actions with the file path here
 
 
