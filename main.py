@@ -7,33 +7,28 @@ from tkinter import filedialog
 from tkinter import simpledialog
 
 
-def combine_same_prefix_column(file_name: str,data_sheet_name:str,company_sheet_name:str):
-    exception_error = False
-    status_message=''
+def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_sheet_name: str):
     try:
         workbook = openpyxl.load_workbook(file_name, data_only=True)
-    except:
-        exception_error =True
-        status_message='無法取得Excel檔'
-        return False,status_message
+    except FileNotFoundError:
+        status_message = '無法取得Excel檔'
+        return False, status_message
     try:
         data_sheet = workbook[data_sheet_name]
-    except:
-        exception_error =True
+    except FileNotFoundError:
         status_message = '找不到資料列工作表'
-        return False,status_message
+        return False, status_message
     try:
         head_quarter_sheet = workbook[company_sheet_name]
-    except:
-        exception_error = True
+    except FileNotFoundError:
         status_message = '找不到總公司工作表'
-        return False,status_message
+        return False, status_message
     new_sheet_title = [head_quarter_sheet['a1'].value]
 
     # get總公司名稱
     head_quarter_dict = {}
-    for row in range(1,len(head_quarter_sheet['A'])+1):
-        if row!=1 :
+    for row in range(1, len(head_quarter_sheet['A'])+1):
+        if row != 1:
             head_quarter_dict[head_quarter_sheet[f'a{row}'].value] = {}
     print(head_quarter_dict.keys())
 
@@ -70,32 +65,33 @@ def combine_same_prefix_column(file_name: str,data_sheet_name:str,company_sheet_
     try:
         status_message = '已完成 Excel 資料合併'
         workbook.save(file_name)
-        return True,status_message
-    except:
+        return True, status_message
+    except PermissionError:
         status_message = '無法儲存Excel檔'
-        return False,status_message
+        return False, status_message
 
-class successDialog(simpledialog.Dialog):
+
+class SuccessDialog(simpledialog.Dialog):
     def __init__(self, parent, title):
         super().__init__(parent, title)
         self.textBox = None
 
     def body(self, frame):
         # print(type(frame)) # tkinter.Frame
-        self.textBox = customtkinter.CTkLabel(frame, text= '已完成 Excel 資料合併' )
+        self.textBox = customtkinter.CTkLabel(frame, text='已完成 Excel 資料合併')
         self.textBox.pack(padx=10, pady=10)
 
         return frame
 
 
-class errorDialog(simpledialog.Dialog):
+class ErrorDialog(simpledialog.Dialog):
     def __init__(self, parent, title):
         super().__init__(parent, title)
         self.textBox = None
 
     def body(self, frame):
         # print(type(frame)) # tkinter.Frame
-        self.textBox = customtkinter.CTkLabel(frame, text='出現錯誤' )
+        self.textBox = customtkinter.CTkLabel(frame, text='出現錯誤')
         self.textBox.pack(padx=10, pady=10)
 
         return frame
@@ -105,13 +101,24 @@ class CustomTKinterApp(customtkinter.CTk):
     def __init__(self, root):
         self.root = root
         self.root.title("Excel 合併子公司 UI")
-        self.root.iconbitmap('icon 2.ico')
+        self.root.iconbitmap('icon2.ico')
 
-        self.data_sheet_name =tk.StringVar()
+        self.data_sheet_name = tk.StringVar()
         self.company_reference_sheet_name = tk.StringVar()
         self.file_path = tk.StringVar()
         self.status_message = tk.StringVar()
         self.status_color = tk.StringVar()
+
+        # Element
+        self.sub_frame = None
+        self.file_path_textbox = None
+        self.browse_button = None
+        self.data_sheet_name_label = None
+        self.data_sheet_name_textbox = None
+        self.company_reference_sheet_name_label = None
+        self.company_reference_sheet_name_textbox = None
+        self.submit_button = None
+        self.message_label = None
 
         self.create_widgets()
 
@@ -134,21 +141,23 @@ class CustomTKinterApp(customtkinter.CTk):
         self.browse_button.place(x=510, y=20)
 
         # Label for enter data sheet name
-        self.data_sheet_name_label = customtkinter.CTkLabel(self.sub_frame, text= '請輸入資料列工作表名稱:')
+        self.data_sheet_name_label = customtkinter.CTkLabel(self.sub_frame, text='請輸入資料列工作表名稱:')
         self.data_sheet_name_label.place(relx=0, anchor='w')  # move the text to the left side of frame
         self.data_sheet_name_label.place(x=0, y=70)
         # Text box to enter data sheet name
-        self.data_sheet_name_textbox = customtkinter.CTkEntry(self.sub_frame, textvariable=self.data_sheet_name, width=250)
+        self.data_sheet_name_textbox = customtkinter.CTkEntry(self.sub_frame,
+                                                              textvariable=self.data_sheet_name, width=250)
         self.data_sheet_name_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
         self.data_sheet_name_textbox.place(x=150, y=70)
 
-        #Label for enter company reference sheet name
+        # Label for enter company reference sheet name
         self.company_reference_sheet_name_label = customtkinter.CTkLabel(self.sub_frame, text='請輸入總公司工作表名稱:')
         self.company_reference_sheet_name_label.place(relx=0, anchor='w')  # move the text to the left side of frame
         self.company_reference_sheet_name_label.place(x=0, y=120)
 
-        #Text box to enter company reference sheet name
-        self.company_reference_sheet_name_textbox = customtkinter.CTkEntry(self.sub_frame, textvariable=self.company_reference_sheet_name, width=250)
+        # Text box to enter company reference sheet name
+        self.company_reference_sheet_name_textbox = customtkinter.CTkEntry(
+            self.sub_frame, textvariable=self.company_reference_sheet_name, width=250)
         self.company_reference_sheet_name_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
         self.company_reference_sheet_name_textbox.place(x=150, y=120)
 
@@ -156,12 +165,12 @@ class CustomTKinterApp(customtkinter.CTk):
         self.submit_button = customtkinter.CTkButton(self.frame, text="開始資料合併", command=self.submit_file, width=100)
         self.submit_button.pack(padx=20, pady=1, side=tk.RIGHT)
 
-        self.message_label = customtkinter.CTkLabel(self.frame,textvariable=self.status_message,text_color=self.check_messagelebel_text_color())
+        self.message_label = customtkinter.CTkLabel(
+            self.frame, textvariable=self.status_message, text_color=self.check_message_label_text_color())
         self.message_label.place(relx=0, anchor='e')  # move the text to the left side of frame
         self.message_label.place(x=520, y=185)
 
-
-    def check_messagelebel_text_color(self):
+    def check_message_label_text_color(self):
         if self.status_message.get() == '':
             self.status_color.set('black')
         elif self.status_message.get() == '已完成 Excel 資料合併':
@@ -180,27 +189,25 @@ class CustomTKinterApp(customtkinter.CTk):
         data_sheet_name = self.data_sheet_name_textbox.get()
         company_sheet_name = self.company_reference_sheet_name_textbox.get()
         if file_name:
-            function_success,status_message = combine_same_prefix_column(file_name=file_name,data_sheet_name=data_sheet_name, company_sheet_name=company_sheet_name)
+            function_success, status_message = combine_same_prefix_column(
+                file_name=file_name, data_sheet_name=data_sheet_name, company_sheet_name=company_sheet_name)
             # button = customtkinter.CTkButton(self.root, text='Ok',width=50)
 
             if function_success:
-                successDialog(self.root,title='Success')
-                self.status_message.set(status_message)
-                self.message_label.destroy()
-                self.message_label = customtkinter.CTkLabel(self.frame, textvariable=self.status_message,
-                                                            text_color=self.check_messagelebel_text_color())
-                self.message_label.place(relx=0, anchor='e')  # move the text to the left side of frame
-                self.message_label.place(x=520, y=185)
+                SuccessDialog(self.root, title='Success')
+                self.set_message_label(status_message)
             else:
-                errorDialog(self.root, title='Failed')
-                self.status_message.set(status_message)
-                self.message_label.destroy()
-                self.message_label = customtkinter.CTkLabel(self.frame, textvariable=self.status_message,
-                                                            text_color=self.check_messagelebel_text_color())
-                self.message_label.place(relx=0, anchor='e')  # move the text to the left side of frame
-                self.message_label.place(x=520, y=185)
+                ErrorDialog(self.root, title='Failed')
+                self.set_message_label(status_message)
             # You can perform further actions with the file path here
 
+    def set_message_label(self, status_message):
+        self.status_message.set(status_message)
+        self.message_label.destroy()
+        self.message_label = customtkinter.CTkLabel(self.frame, textvariable=self.status_message,
+                                                    text_color=self.check_message_label_text_color())
+        self.message_label.place(relx=0, anchor='e')  # move the text to the left side of frame
+        self.message_label.place(x=520, y=185)
 
 
 if __name__ == '__main__':
