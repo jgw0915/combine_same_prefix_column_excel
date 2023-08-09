@@ -7,27 +7,37 @@ from tkinter import filedialog
 from tkinter import simpledialog
 
 
-def combine_same_prefix_column(file_name: str,data_sheet_name:str,company_sheet_name:str)->bool:
+def combine_same_prefix_column(file_name: str,data_sheet_name:str,company_sheet_name:str):
     exception_error = False
+    status_message=''
     try:
         workbook = openpyxl.load_workbook(file_name, data_only=True)
     except:
         exception_error =True
+        status_message='無法取得Excel檔'
     try:
         data_sheet = workbook[data_sheet_name]
     except:
-        exception_error =True
+        if exception_error!=True:
+            exception_error =True
+            status_message = '找不到資料列工作表'
+        else:
+            status_message+='& 找不到資料列工作表'
     try:
         head_quarter_sheet = workbook[company_sheet_name]
     except:
-        exception_error = True
-    new_sheet_title = ['總公司']
+        if exception_error != True:
+            exception_error = True
+            status_message = '找不到總公司工作表'
+        else:
+            status_message += '& 找不到總公司工作表'
+    new_sheet_title = [head_quarter_sheet['a1'].value]
     if not exception_error:
         # get總公司名稱
         head_quarter_dict = {}
-        for item in head_quarter_sheet['A']:
-            if item.value != '總公司':
-                head_quarter_dict[item.value] = {}
+        for row in range(1,len(head_quarter_sheet['A'])+1):
+            if row!=1 :
+                head_quarter_dict[head_quarter_sheet[f'a{row}'].value] = {}
         print(head_quarter_dict.keys())
 
         # 合併資料
@@ -47,7 +57,7 @@ def combine_same_prefix_column(file_name: str,data_sheet_name:str,company_sheet_
                     # 資料欄
                     else:
                         if row[0].value.startswith(prefix) and col_num != 0:
-                            head_quarter_dict.get(prefix)[title[col_num].value] += cell
+                            head_quarter_dict.get(prefix)[title[col_num].value] += float(cell)
         print(head_quarter_dict)
 
         # 輸出資料
@@ -60,9 +70,11 @@ def combine_same_prefix_column(file_name: str,data_sheet_name:str,company_sheet_
                 final_data.append(value)
             export_sheet.append(final_data)
             final_data.clear()
-
-        workbook.save(file_name)
-        return True
+        try:
+            workbook.save(file_name)
+            return True
+        except:
+            return False
     else:
         return False
 class successDialog(simpledialog.Dialog):
@@ -113,36 +125,30 @@ class CustomTKinterApp(customtkinter.CTk):
 
         # Text box to display file path
         self.file_path_textbox = customtkinter.CTkEntry(self.sub_frame, textvariable=self.file_path, width=500)
-        # self.file_path_textbox.grid(row=0, column=0)
         self.file_path_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
         self.file_path_textbox.place(x=0, y=20)
 
         # Browse button
         self.browse_button = customtkinter.CTkButton(self.sub_frame, text="選取檔案", command=self.browse_file, width=100)
-        # self.browse_button.grid(row=0, column=1)
         self.browse_button.place(relx=0, anchor='w')  # move the text to the left side of frame
         self.browse_button.place(x=510, y=20)
 
         # Label for enter data sheet name
         self.data_sheet_name_label = customtkinter.CTkLabel(self.sub_frame, text= '請輸入資料列工作表名稱:')
-        # self.data_sheet_name_label.grid(row=1, column=0, columnspan=2)
         self.data_sheet_name_label.place(relx=0, anchor='w')  # move the text to the left side of frame
         self.data_sheet_name_label.place(x=0, y=70)
         # Text box to enter data sheet name
         self.data_sheet_name_textbox = customtkinter.CTkEntry(self.sub_frame, textvariable=self.data_sheet_name, width=250)
-        # self.data_sheet_name_textbox.grid(row=1, column=1, columnspan=2)
         self.data_sheet_name_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
         self.data_sheet_name_textbox.place(x=150, y=70)
 
         #Label for enter company reference sheet name
         self.company_reference_sheet_name_label = customtkinter.CTkLabel(self.sub_frame, text='請輸入總公司工作表名稱:')
-        # self.company_reference_sheet_name_label.grid(row=2, column=0, columnspan=2)
         self.company_reference_sheet_name_label.place(relx=0, anchor='w')  # move the text to the left side of frame
         self.company_reference_sheet_name_label.place(x=0, y=120)
 
         #Text box to enter company reference sheet name
         self.company_reference_sheet_name_textbox = customtkinter.CTkEntry(self.sub_frame, textvariable=self.company_reference_sheet_name, width=250)
-        # self.company_reference_sheet_name_textbox.grid(row=2, column=1, columnspan=2)
         self.company_reference_sheet_name_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
         self.company_reference_sheet_name_textbox.place(x=150, y=120)
 
