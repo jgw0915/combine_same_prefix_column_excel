@@ -55,9 +55,9 @@ def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_she
                         try:
                             head_quarter_dict.get(prefix)[title[col_num].value] += float(cell)
                         except TypeError:
-                            head_quarter_dict.get(prefix)[title[col_num].value] = 0
+                            head_quarter_dict.get(prefix)[title[col_num].value] += 0
                         except ValueError:
-                            head_quarter_dict.get(prefix)[title[col_num].value] = 0
+                            head_quarter_dict.get(prefix)[title[col_num].value] += 0
     print(head_quarter_dict)
 
     # 輸出資料
