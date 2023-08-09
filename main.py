@@ -1,3 +1,4 @@
+from datetime import datetime
 
 import customtkinter
 import openpyxl
@@ -10,17 +11,17 @@ from tkinter import simpledialog
 def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_sheet_name: str):
     try:
         workbook = openpyxl.load_workbook(file_name, data_only=True)
-    except FileNotFoundError:
+    except openpyxl.utils.exceptions.InvalidFileException:
         status_message = '無法取得Excel檔'
         return False, status_message
     try:
         data_sheet = workbook[data_sheet_name]
-    except FileNotFoundError:
+    except KeyError:
         status_message = '找不到資料列工作表'
         return False, status_message
     try:
         head_quarter_sheet = workbook[company_sheet_name]
-    except FileNotFoundError:
+    except KeyError:
         status_message = '找不到總公司工作表'
         return False, status_message
     new_sheet_title = [head_quarter_sheet['a1'].value]
@@ -44,12 +45,19 @@ def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_she
                 if row_num == 1:
                     if col_num != 0:
                         head_quarter_dict.get(prefix)[cell] = 0
-                        if cell not in new_sheet_title:
-                            new_sheet_title.append(cell)
+                        if type(cell) == datetime:
+                            cell = cell.strftime("%Y/%m")
+                        if str(cell) not in new_sheet_title:
+                            new_sheet_title.append(str(cell))
                 # 資料欄
                 else:
                     if row[0].value.startswith(prefix) and col_num != 0:
-                        head_quarter_dict.get(prefix)[title[col_num].value] += float(cell)
+                        try:
+                            head_quarter_dict.get(prefix)[title[col_num].value] += float(cell)
+                        except TypeError:
+                            head_quarter_dict.get(prefix)[title[col_num].value] = 0
+                        except ValueError:
+                            head_quarter_dict.get(prefix)[title[col_num].value] = 0
     print(head_quarter_dict)
 
     # 輸出資料
@@ -67,7 +75,7 @@ def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_she
         workbook.save(file_name)
         return True, status_message
     except PermissionError:
-        status_message = '無法儲存Excel檔'
+        status_message = '無法儲存Excel檔(Excel檔可能已開啟)'
         return False, status_message
 
 
