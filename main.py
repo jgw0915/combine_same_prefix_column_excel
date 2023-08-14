@@ -1,15 +1,13 @@
 import threading
 from datetime import datetime
-from operator import *
 import customtkinter
 import openpyxl
 
 import tkinter as tk
 from tkinter import filedialog
-from tkinter import simpledialog
 
 
-def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_sheet_name: str, transform_company_sheet_name:str, delete_sheet_name:str):
+def combine_same_prefix_column(file_name: str, data_sheet_name: str, transform_company_sheet_name:str, delete_sheet_name:str):
     try:
         workbook = openpyxl.load_workbook(file_name, data_only=True)
     except openpyxl.utils.exceptions.InvalidFileException:
@@ -24,11 +22,6 @@ def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_she
         status_message = '找不到資料列工作表'
         return False, status_message
     try:
-        head_quarter_sheet = workbook[company_sheet_name]
-    except KeyError:
-        status_message = '找不到總公司工作表'
-        return False, status_message
-    try:
         transform_company_sheet = workbook[transform_company_sheet_name]
     except KeyError:
         status_message = '找不到公司名稱轉換工作表'
@@ -39,14 +32,16 @@ def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_she
         status_message = '找不到沖銷公司工作表'
         return False, status_message
 
-    new_sheet_title = [head_quarter_sheet['a1'].value]
-
-    # get總公司名稱
+    new_sheet_title = []
     head_quarter_dict = {}
-    for row in range(1, len(head_quarter_sheet['A'])+1):
-        if row != 1:
-            head_quarter_dict[str(head_quarter_sheet[f'a{row}'].value).rstrip(' ')] = {}
-    print(head_quarter_dict.keys())
+
+    # 取得標頭
+    for col_num in range(len(data_sheet['1'])):
+        cell = data_sheet['1'][col_num].value
+        if type(cell) == datetime:
+            cell = cell.strftime("%Y/%m")
+        new_sheet_title.append(str(cell).rstrip(' '))
+    print(new_sheet_title)
 
     # 轉換公司名稱
     origin_name_col = transform_company_sheet['a']
@@ -66,38 +61,32 @@ def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_she
     # 沖銷公司名稱
     delete_company_col = delete_sheet['a']
     delete_company_list=[]
-    for row in range(2,len(delete_company_col)):
-        delete_company_list.append(str(delete_company_col[row].value))
+    for row in range(1,len(delete_company_col)):
+        delete_company_list.append(str(delete_company_col[row].value).rstrip(' '))
+    print(delete_company_list)
 
     # 合併資料
-    length = len(data_sheet['A'])+1
-    for prefix in head_quarter_dict.keys():
-        if prefix in delete_company_list:
-            continue
-        for row_num in range(1, length):
+    row_length = len(data_sheet['A'])+1
+    col_length = len(data_sheet['1'])
+    for row_num in range(2,row_length):
+        for col_num in range (1,col_length):
             row = data_sheet[f'{row_num}']
-            title = data_sheet[f'{1}']
-            for col_num in range(len(row)):
-                cell = row[col_num].value
-                # 標籤欄
-                if row_num == 1:
-                    if col_num != 0:
-                        head_quarter_dict.get(prefix)[cell] = 0
-                        if type(cell) == datetime:
-                            cell = cell.strftime("%Y/%m")
-                        if str(cell) not in new_sheet_title:
-                            new_sheet_title.append(str(cell))
-                # 資料欄
-                else:
-                    if row[0].value.startswith(prefix) and col_num != 0:
-                        try:
-                            print(row[0].value+',{}',format(cell))
-                            head_quarter_dict.get(prefix)[title[col_num].value] += float(cell)
-                        except TypeError:
-                            head_quarter_dict.get(prefix)[title[col_num].value] += 0
-                        except ValueError:
-                            head_quarter_dict.get(prefix)[title[col_num].value] += 0
-    print(head_quarter_dict)
+            company_name = str(row[0].value).rstrip(' ')
+            if company_name in delete_company_list:
+                continue
+            if company_name not in head_quarter_dict.keys():
+                head_quarter_dict[company_name] = {}
+                for i in range(1,col_length):
+                    head_quarter_dict.get(company_name)[new_sheet_title[i]] = 0
+            cell = row[col_num].value
+            try:
+                print(company_name + f',{cell}')
+                head_quarter_dict.get(company_name)[new_sheet_title[col_num]] += float(cell)
+            except TypeError:
+                head_quarter_dict.get(company_name)[new_sheet_title[col_num]] += 0
+            except ValueError:
+                head_quarter_dict.get(company_name)[new_sheet_title[col_num]] += 0
+
 
     # 輸出資料
     export_sheet = workbook.create_sheet('輸出')
@@ -114,6 +103,7 @@ def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_she
         final_data.append(tuple[0])
         for key, value in tuple[1].items():
             final_data.append(value)
+        print(final_data)
         export_sheet.append(final_data)
         final_data.clear()
     try:
@@ -123,33 +113,6 @@ def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_she
     except PermissionError:
         status_message = '無法儲存Excel檔(Excel檔可能已開啟)'
         return False, status_message
-
-
-class SuccessDialog(simpledialog.Dialog):
-    def __init__(self, parent, title):
-        super().__init__(parent, title)
-        self.textBox = None
-
-    def body(self, frame):
-        # print(type(frame)) # tkinter.Frame
-        self.textBox = customtkinter.CTkLabel(frame, text='已完成 Excel 資料合併')
-        self.textBox.pack(padx=10, pady=10)
-
-        return frame
-
-
-class ErrorDialog(simpledialog.Dialog):
-    def __init__(self, parent, title):
-        super().__init__(parent, title)
-        self.textBox = None
-
-
-    def body(self, frame):
-        # print(type(frame)) # tkinter.Frame
-        self.textBox = customtkinter.CTkLabel(frame, text='出現錯誤')
-        self.textBox.pack(padx=10, pady=10)
-
-        return frame
 
 
 class CustomTKinterApp(customtkinter.CTk):
@@ -172,8 +135,6 @@ class CustomTKinterApp(customtkinter.CTk):
         self.browse_button = None
         self.data_sheet_name_label = None
         self.data_sheet_name_textbox = None
-        self.company_reference_sheet_name_label = None
-        self.company_reference_sheet_name_textbox = None
         self.submit_button = None
         self.message_label = None
 
@@ -187,7 +148,7 @@ class CustomTKinterApp(customtkinter.CTk):
         self.frame = customtkinter.CTkFrame(self.root, width=700, height=400)
         self.frame.pack(padx=10, pady=10)
 
-        self.sub_frame = customtkinter.CTkFrame(self.frame, width=625, height=250)
+        self.sub_frame = customtkinter.CTkFrame(self.frame, width=625, height=200)
         self.sub_frame.pack(padx=10, pady=10)
 
         # Text box to display file path
@@ -210,36 +171,25 @@ class CustomTKinterApp(customtkinter.CTk):
         self.data_sheet_name_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
         self.data_sheet_name_textbox.place(x=150, y=70)
 
-        # Label for enter company reference sheet name
-        self.company_reference_sheet_name_label = customtkinter.CTkLabel(self.sub_frame, text='請輸入預合併公司工作表名稱:')
-        self.company_reference_sheet_name_label.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.company_reference_sheet_name_label.place(x=0, y=120)
-
-        # Text box to enter company reference sheet name
-        self.company_reference_sheet_name_textbox = customtkinter.CTkEntry(
-            self.sub_frame, textvariable=self.company_reference_sheet_name, width=250)
-        self.company_reference_sheet_name_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.company_reference_sheet_name_textbox.place(x=180, y=120)
-
         self.transform_sheet_name_label = customtkinter.CTkLabel(self.sub_frame, text='請輸入轉換公司工作表名稱:')
         self.transform_sheet_name_label.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.transform_sheet_name_label.place(x=0, y=170)
+        self.transform_sheet_name_label.place(x=0, y=120)
 
         # Text box to enter company reference sheet name
         self.transform_sheet_name_textbox = customtkinter.CTkEntry(
             self.sub_frame, textvariable=self.transform_sheet_name, width=250)
         self.transform_sheet_name_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.transform_sheet_name_textbox.place(x=165, y=170)
+        self.transform_sheet_name_textbox.place(x=165, y=120)
 
         self.delete_sheet_name_label = customtkinter.CTkLabel(self.sub_frame, text='請輸入沖銷公司工作表名稱:')
         self.delete_sheet_name_label.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.delete_sheet_name_label.place(x=0, y=220)
+        self.delete_sheet_name_label.place(x=0, y=170)
 
         # Text box to enter company reference sheet name
         self.delete_sheet_name_textbox = customtkinter.CTkEntry(
             self.sub_frame, textvariable=self.delete_sheet_name, width=250)
         self.delete_sheet_name_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.delete_sheet_name_textbox.place(x=165, y=220)
+        self.delete_sheet_name_textbox.place(x=165, y=170)
 
         # Submit button
         self.submit_button = customtkinter.CTkButton(self.frame, text="開始資料合併", command=self.start_thread, width=100)
@@ -248,7 +198,7 @@ class CustomTKinterApp(customtkinter.CTk):
         self.message_label = customtkinter.CTkLabel(
             self.frame, textvariable=self.status_message, text_color=self.check_message_label_text_color())
         self.message_label.place(relx=0, anchor='e')  # move the text to the left side of frame
-        self.message_label.place(x=520, y=285)
+        self.message_label.place(x=520, y=235)
 
 
     def start_thread(self):
@@ -275,25 +225,18 @@ class CustomTKinterApp(customtkinter.CTk):
     def submit_file(self):
         file_name = self.file_path.get()
         data_sheet_name = self.data_sheet_name_textbox.get()
-        company_sheet_name = self.company_reference_sheet_name_textbox.get()
         transform_sheet_name = self.transform_sheet_name.get()
         delete_sheet_name = self.delete_sheet_name.get()
         if file_name:
             self.set_message_label(status_message='資料處理中...')
             function_success, status_message = combine_same_prefix_column(
                 file_name=file_name, data_sheet_name=data_sheet_name,
-                company_sheet_name=company_sheet_name,
                 transform_company_sheet_name=transform_sheet_name,
                 delete_sheet_name=delete_sheet_name)
-            # new_root = customtkinter.CTk()
-            # new_root.withdraw()
             if function_success:
-                # SuccessDialog(self.root.update(), title='Success')
                 self.set_message_label(status_message)
             else:
-                # ErrorDialog(self.root.update(), title='Failed')
                 self.set_message_label(status_message)
-            # new_root.destroy()
 
 
             # You can perform further actions with the file path here
@@ -304,7 +247,7 @@ class CustomTKinterApp(customtkinter.CTk):
         self.message_label = customtkinter.CTkLabel(self.frame, textvariable=self.status_message,
                                                     text_color=self.check_message_label_text_color())
         self.message_label.place(relx=0, anchor='e')  # move the text to the left side of frame
-        self.message_label.place(x=520, y=285)
+        self.message_label.place(x=520, y=235)
 
         self.submit_button.destroy()
         self.submit_button = customtkinter.CTkButton(self.frame, text="開始資料合併",
