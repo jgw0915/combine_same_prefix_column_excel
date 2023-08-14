@@ -3,6 +3,7 @@ from datetime import datetime
 import customtkinter
 import openpyxl
 
+from tkinter import ttk
 import tkinter as tk
 from tkinter import filedialog
 
@@ -115,11 +116,15 @@ def combine_same_prefix_column(file_name: str, data_sheet_name: str, transform_c
         return False, status_message
 
 
-class CustomTKinterApp(customtkinter.CTk):
+class CustomTKinterApp(tk.Tk):
     def __init__(self, root):
         self.root = root
         self.root.title("Excel 合併子公司 UI")
         self.root.iconbitmap('icon2.ico')
+        self.style = ttk.Style(root)
+        self.root.tk.call("source", "forest-light.tcl")
+        self.root.tk.call("source", "forest-dark.tcl")
+        self.style.theme_use("forest-light")
 
         self.data_sheet_name = tk.StringVar()
         self.company_reference_sheet_name = tk.StringVar()
@@ -128,6 +133,7 @@ class CustomTKinterApp(customtkinter.CTk):
         self.file_path = tk.StringVar()
         self.status_message = tk.StringVar()
         self.status_color = tk.StringVar()
+
 
         # Element
         self.sub_frame = None
@@ -145,60 +151,64 @@ class CustomTKinterApp(customtkinter.CTk):
     def create_widgets(self):
 
 
-        self.frame = customtkinter.CTkFrame(self.root, width=700, height=400)
-        self.frame.pack(padx=10, pady=10)
+        self.frame = ttk.Frame(self.root)
+        self.frame.pack(padx=5, pady=5)
 
-        self.sub_frame = customtkinter.CTkFrame(self.frame, width=625, height=200)
-        self.sub_frame.pack(padx=10, pady=10)
+        self.sub_frame = ttk.Frame(self.frame)
+        self.sub_frame.grid(row=0,padx=10,pady=10)
+
+        self.sub_frame1 = ttk.Frame(self.sub_frame)
+        self.sub_frame1.grid(row=0,sticky="w")
+
+        self.sub_frame2 = ttk.Frame(self.sub_frame)
+        self.sub_frame2.grid(row=1,sticky="w")
+
+        self.sub_frame3 = ttk.Frame(self.sub_frame)
+        self.sub_frame3.grid(row=2, sticky="E")
 
         # Text box to display file path
-        self.file_path_textbox = customtkinter.CTkEntry(self.sub_frame, textvariable=self.file_path, width=500)
-        self.file_path_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.file_path_textbox.place(x=0, y=20)
+        self.file_path_textbox = ttk.Entry(self.sub_frame1, textvariable=self.file_path,width=82)
+        self.file_path_textbox.grid(row=0,column=0,pady=5,padx=5,sticky='W')
 
         # Browse button
-        self.browse_button = customtkinter.CTkButton(self.sub_frame, text="選取檔案", command=self.browse_file, width=100)
-        self.browse_button.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.browse_button.place(x=510, y=20)
+        self.browse_button = ttk.Button(self.sub_frame1, text="選取檔案", command=self.browse_file)
+        self.browse_button.grid(row=0,column=1,pady=5,padx=5,sticky='W')
 
         # Label for enter data sheet name
-        self.data_sheet_name_label = customtkinter.CTkLabel(self.sub_frame, text='請輸入資料列工作表名稱:')
-        self.data_sheet_name_label.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.data_sheet_name_label.place(x=0, y=70)
+        self.data_sheet_name_label = ttk.Label(self.sub_frame2, text='請輸入資料列工作表名稱:',width=28)
+        self.data_sheet_name_label.grid(row=0,column=0,pady=5,sticky='W')
+
         # Text box to enter data sheet name
-        self.data_sheet_name_textbox = customtkinter.CTkEntry(self.sub_frame,
-                                                              textvariable=self.data_sheet_name, width=250)
-        self.data_sheet_name_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.data_sheet_name_textbox.place(x=150, y=70)
+        self.data_sheet_name_textbox = ttk.Entry(self.sub_frame2,
+                                                              textvariable=self.data_sheet_name,width=70)
+        self.data_sheet_name_textbox.grid(row=0,column=1,pady=5,sticky='W')
 
-        self.transform_sheet_name_label = customtkinter.CTkLabel(self.sub_frame, text='請輸入轉換公司工作表名稱:')
-        self.transform_sheet_name_label.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.transform_sheet_name_label.place(x=0, y=120)
+        self.transform_sheet_name_label = ttk.Label(self.sub_frame2, text='請輸入轉換公司工作表名稱:')
+        self.transform_sheet_name_label.grid(row=1,column=0,pady=5,sticky='W',columnspan=2)
 
         # Text box to enter company reference sheet name
-        self.transform_sheet_name_textbox = customtkinter.CTkEntry(
-            self.sub_frame, textvariable=self.transform_sheet_name, width=250)
-        self.transform_sheet_name_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.transform_sheet_name_textbox.place(x=165, y=120)
+        self.transform_sheet_name_textbox = ttk.Entry(
+            self.sub_frame2, textvariable=self.transform_sheet_name, width=70)
+        self.transform_sheet_name_textbox.grid(row=1,column=1,pady=5,sticky='W',columnspan=2)
 
-        self.delete_sheet_name_label = customtkinter.CTkLabel(self.sub_frame, text='請輸入沖銷公司工作表名稱:')
-        self.delete_sheet_name_label.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.delete_sheet_name_label.place(x=0, y=170)
+        self.delete_sheet_name_label = ttk.Label(self.sub_frame2, text='請輸入沖銷公司工作表名稱:')
+        self.delete_sheet_name_label.grid(row=2,column=0,pady=5,sticky='W',columnspan=2)
 
         # Text box to enter company reference sheet name
-        self.delete_sheet_name_textbox = customtkinter.CTkEntry(
-            self.sub_frame, textvariable=self.delete_sheet_name, width=250)
-        self.delete_sheet_name_textbox.place(relx=0, anchor='w')  # move the text to the left side of frame
-        self.delete_sheet_name_textbox.place(x=165, y=170)
+        self.delete_sheet_name_textbox = ttk.Entry(
+            self.sub_frame2, textvariable=self.delete_sheet_name, width=70)
+        self.delete_sheet_name_textbox.grid(row=2,column=1,pady=5,sticky='W',columnspan=2)
 
         # Submit button
-        self.submit_button = customtkinter.CTkButton(self.frame, text="開始資料合併", command=self.start_thread, width=100)
-        self.submit_button.pack(padx=20, pady=1, side=tk.RIGHT)
+        self.submit_button = ttk.Button(self.sub_frame3, text="開始資料合併", command=self.start_thread)
+        # self.submit_button.pack(padx=20, pady=1, side=tk.RIGHT)
+        self.submit_button.grid(row=0, column=1, padx=2,pady=5, sticky='E')
 
-        self.message_label = customtkinter.CTkLabel(
-            self.frame, textvariable=self.status_message, text_color=self.check_message_label_text_color())
-        self.message_label.place(relx=0, anchor='e')  # move the text to the left side of frame
-        self.message_label.place(x=520, y=235)
+        self.message_label = ttk.Label(
+            self.sub_frame3, textvariable=self.status_message)
+        self.message_label.grid(row=0,column=0,pady=5,sticky='E')
+
+        # text_color = self.check_message_label_text_color()
 
 
     def start_thread(self):
@@ -244,16 +254,13 @@ class CustomTKinterApp(customtkinter.CTk):
     def set_message_label(self, status_message):
         self.status_message.set(status_message)
         self.message_label.destroy()
-        self.message_label = customtkinter.CTkLabel(self.frame, textvariable=self.status_message,
-                                                    text_color=self.check_message_label_text_color())
-        self.message_label.place(relx=0, anchor='e')  # move the text to the left side of frame
-        self.message_label.place(x=520, y=235)
+        # Submit button
+        self.submit_button = ttk.Button(self.sub_frame3, text="開始資料合併", command=self.start_thread)
+        self.submit_button.grid(row=0, column=1, padx=2, pady=5, sticky='E')
 
-        self.submit_button.destroy()
-        self.submit_button = customtkinter.CTkButton(self.frame, text="開始資料合併",
-                                                     command=threading.Thread(target=self.submit_file).start,
-                                                     width=100)
-        self.submit_button.pack(padx=20, pady=1, side=tk.RIGHT)
+        self.message_label = ttk.Label(
+            self.sub_frame3, textvariable=self.status_message, foreground=self.check_message_label_text_color())
+        self.message_label.grid(row=0, column=0, pady=5, sticky='E')
 
 
 if __name__ == '__main__':
