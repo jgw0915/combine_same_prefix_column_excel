@@ -105,8 +105,11 @@ def combine_same_prefix_column(file_name: str, data_sheet_name: str, company_she
     sorted_data = []
     final_data = []
     # 排序資料
-    for sorted_row in sorted(head_quarter_dict.items(), key=lambda x: x[1][new_sheet_title[1]],reverse=True):
-        sorted_data.append(sorted_row)
+    try:
+        for sorted_row in sorted(head_quarter_dict.items(), key=lambda x: x[1][new_sheet_title[1]],reverse=True):
+            sorted_data.append(sorted_row)
+    except KeyError as e:
+        return False,'排序時發生錯誤，請重新確認各工作表名稱和格式是否正確'
     for tuple in sorted_data:
         final_data.append(tuple[0])
         for key, value in tuple[1].items():
@@ -174,10 +177,12 @@ class CustomTKinterApp(customtkinter.CTk):
         self.submit_button = None
         self.message_label = None
 
+        customtkinter.set_appearance_mode("light")
 
         self.create_widgets()
 
     def create_widgets(self):
+
 
         self.frame = customtkinter.CTkFrame(self.root, width=700, height=400)
         self.frame.pack(padx=10, pady=10)
@@ -280,16 +285,15 @@ class CustomTKinterApp(customtkinter.CTk):
                 company_sheet_name=company_sheet_name,
                 transform_company_sheet_name=transform_sheet_name,
                 delete_sheet_name=delete_sheet_name)
-            # button = customtkinter.CTkButton(self.root, text='Ok',width=50)
-            new_root = customtkinter.CTk()
-            new_root.withdraw()
+            # new_root = customtkinter.CTk()
+            # new_root.withdraw()
             if function_success:
-                SuccessDialog(new_root, title='Success')
+                # SuccessDialog(self.root.update(), title='Success')
                 self.set_message_label(status_message)
             else:
-                ErrorDialog(new_root, title='Failed')
+                # ErrorDialog(self.root.update(), title='Failed')
                 self.set_message_label(status_message)
-            new_root.destroy()
+            # new_root.destroy()
 
 
             # You can perform further actions with the file path here
