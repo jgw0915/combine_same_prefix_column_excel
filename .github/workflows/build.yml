@@ -2,14 +2,29 @@
 on: [push]
 
 jobs:
+  build_python:
+    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+          python-version: ["pypy3.9", "pypy3.10", "3.9", "3.10", "3.11", "3.12"]
+  
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      # You can test your matrix by printing the current Python version
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+        
   depchecktest:
+    needs: build_python
     runs-on: ubuntu-latest
     name: depecheck_test
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Build project with Maven
-        run: mvn clean install
       - name: Depcheck
         uses: dependency-check/Dependency-Check_Action@main
         id: Depcheck
