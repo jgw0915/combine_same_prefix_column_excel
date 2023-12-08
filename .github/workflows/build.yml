@@ -37,18 +37,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Install homebrew and dependency-check
+        run: |
+          brew update && brew install dependency-check
       - name: Depcheck
-        uses: dependency-check/Dependency-Check_Action@main
-        id: Depcheck
-        with:
-          project: 'test'
-          path: '.'
-          format: 'HTML'
-          out: 'reports' # this is the default, no need to specify unless you wish to override it
-          args: >
-            --failOnCVSS 7
-            --enableRetired
-        continue-on-error: true
+        run: |
+          dependency-check --scan . --project app
       - name: Upload Test results
         uses: actions/upload-artifact@master
         with:
