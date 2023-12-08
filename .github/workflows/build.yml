@@ -40,13 +40,13 @@ jobs:
           pip install safety
       - name: Depcheck
         run: |
-          safety check -r requirements.txt --output depcheck.json
+          safety check -r requirements.txt --output html --key ${{ secrets.SAFETY_API_KEY }} --save-html output.html
         continue-on-error: true
       - name: Upload Test results
         uses: actions/upload-artifact@master
         with:
            name: Depcheck report
-           path: depcheck.json
+           path: output.html
   slscan: 
     runs-on: ubuntu-latest
     needs: depchecktest
