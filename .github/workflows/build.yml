@@ -40,7 +40,7 @@ jobs:
           pip install safety==2.3.5
       - name: Depcheck
         run: |
-          safety check -r requirements.txt --output json --key ${{ secrets.SAFETY_API_KEY }} --savejson- output.json
+          safety check -r requirements.txt --output json --key ${{ secrets.SAFETY_API_KEY }} --save-json output.json
         continue-on-error: true
       - name: Upload Test results
         uses: actions/upload-artifact@master
