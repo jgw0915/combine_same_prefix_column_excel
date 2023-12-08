@@ -37,7 +37,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install safety
+          pip install safety==2.3.5
       - name: Depcheck
         run: |
           safety check -r requirements.txt --output html --key ${{ secrets.SAFETY_API_KEY }} --save-html output.html
